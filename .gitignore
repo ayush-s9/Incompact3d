@@ -2,6 +2,7 @@
 *.xc*
 *.pbxproj
 *.out
+*.bin
 *.o
 *.mod
 *.smod
@@ -35,3 +36,5 @@ Test*
 checkpoint
 restart*
 forces.dat*
+examples-modified/
+data/
