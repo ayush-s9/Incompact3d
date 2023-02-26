@@ -178,10 +178,10 @@ contains
 
        call boundary_conditions_dbg (ux, uy, uz, phi)
 
-!!!    elseif (itype.eq.itype_jet) then
-!!!
-!!!       call boundary_conditions_jet (rho,ux,uy,uz,phi)
-!!!
+   elseif (itype.eq.itype_jet) then
+
+      call boundary_conditions_jet (rho,ux,uy,uz,phi)
+
     elseif (itype.eq.itype_tbl) then
 
        call boundary_conditions_tbl (ux, uy, uz, phi)
@@ -481,10 +481,10 @@ contains
 
        call momentum_forcing_channel(dux1, duy1, duz1, ux1, uy1, uz1)
 
-!!!    elseif (itype.eq.itype_jet) then
-!!!
-!!!       call momentum_forcing_jet(dux1, duy1, duz1, rho1, ux1, uy1, uz1)
-!!!
+   !  elseif (itype.eq.itype_jet) then
+
+   !     call momentum_forcing_jet(dux1, duy1, duz1, rho1, ux1, uy1, uz1)
+
     elseif (itype.eq.itype_abl) then
 
        call momentum_forcing_abl(dux1, duy1, duz1, ux1, uy1, uz1, phi1)

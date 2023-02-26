@@ -18,7 +18,7 @@ program xcompact3d
   use genepsi, only : genepsi3d
 
   implicit none
-
+  integer :: i,j,k  
 
   call init_xcompact3d()
 
@@ -26,7 +26,7 @@ program xcompact3d
      !t=itime*dt
      t=t0 + (itime0 + itime + 1 - ifirst)*dt
      call simu_stats(2)
-
+     call postprocessing(rho1,ux1,uy1,uz1,pp3,phi1,ep1)
      if (iturbine.ne.0) call compute_turbines(ux1, uy1, uz1)
 
      if (iin.eq.3.and.mod(itime,ntimesteps)==1) then
@@ -37,7 +37,7 @@ program xcompact3d
         call filter(C_filter)
         call apply_spatial_filter(ux1,uy1,uz1,phi1)
      endif
-
+     
      do itr=1,iadvance_time
 
         call set_fluid_properties(rho1,mu1)
@@ -60,8 +60,8 @@ program xcompact3d
            call velocity_to_momentum(rho1,ux1,uy1,uz1)
         endif
 
-        call int_time(rho1,ux1,uy1,uz1,phi1,drho1,dux1,duy1,duz1,dphi1)
-        call pre_correc(ux1,uy1,uz1,ep1)
+        call int_time(rho1,ux1,uy1,uz1,phi1,drho1,dux1,duy1,duz1,dphi1) 
+        call pre_correc(rho1,ux1,uy1,uz1,ep1)
 
         call calc_divu_constraint(divu3,rho1,phi1)
         call solve_poisson(pp3,px1,py1,pz1,rho1,ux1,uy1,uz1,ep1,drho1,divu3)
@@ -74,9 +74,14 @@ program xcompact3d
         endif
         
         call test_flow(rho1,ux1,uy1,uz1,phi1,ep1,drho1,divu3)
-
+        ux1(1,:,:)=bxx1(:,:)
+        uy1(1,:,:)=bxy1(:,:)
+        uz1(1,:,:)=bxz1(:,:)
+        ux1(nx,:,:)=bxxn(:,:)
+        uy1(nx,:,:)=bxyn(:,:)
+        uz1(nx,:,:)=bxzn(:,:)
      enddo !! End sub timesteps
-
+     
      call restart(ux1,uy1,uz1,dux1,duy1,duz1,ep1,pp3(:,:,:,1),phi1,dphi1,px1,py1,pz1,rho1,drho1,mu1,1)
 
      call simu_stats(3)

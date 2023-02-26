@@ -282,7 +282,7 @@ contains
     real(mytype) :: tmax,tmoy,tmax1,tmoy1
 
     nvect3=(ph1%zen(1)-ph1%zst(1)+1)*(ph1%zen(2)-ph1%zst(2)+1)*nzmsize
-
+    
     if (iibm.eq.0) then
        ta1(:,:,:) = ux1(:,:,:)
        tb1(:,:,:) = uy1(:,:,:)
@@ -498,7 +498,7 @@ contains
   end subroutine gradp
   !############################################################################
   !############################################################################
-  subroutine pre_correc(ux,uy,uz,ep)
+  subroutine pre_correc(rho,ux,uy,uz,ep)
 
     USE decomp_2d
     USE variables
@@ -510,6 +510,7 @@ contains
     implicit none
 
     real(mytype),dimension(xsize(1),xsize(2),xsize(3)) :: ux,uy,uz,ep
+    real(mytype),dimension(xsize(1),xsize(2),xsize(3),nrhotime) :: rho
     integer :: i,j,k,is
     real(mytype) :: ut,ut1,utt,ut11
 
@@ -562,13 +563,23 @@ contains
              dpdzx1(j,k)=dpdzx1(j,k)*gdt(itr)
           enddo
        enddo
-       do k=1,xsize(3)
-          do j=1,xsize(2)
-             ux(1 ,j,k)=bxx1(j,k)
-             uy(1 ,j,k)=bxy1(j,k)+dpdyx1(j,k)
-             uz(1 ,j,k)=bxz1(j,k)+dpdzx1(j,k)
-          enddo
-       enddo
+       if (ilmn) then
+         do k=1,xsize(3)
+            do j=1,xsize(2)
+               ux(1 ,j,k)=rho(1,j,k,1)*bxx1(j,k)
+               uy(1 ,j,k)=rho(1,j,k,1)*bxy1(j,k)+dpdyx1(j,k)
+               uz(1 ,j,k)=rho(1,j,k,1)*bxz1(j,k)+dpdzx1(j,k)
+            enddo
+         enddo
+      else
+         do k=1,xsize(3)
+            do j=1,xsize(2)
+               ux(1 ,j,k)=bxx1(j,k)
+               uy(1 ,j,k)=bxy1(j,k)+dpdyx1(j,k)
+               uz(1 ,j,k)=bxz1(j,k)+dpdzx1(j,k)
+            enddo
+         enddo
+      endif
     endif
     if (nclxn==2) then
        do k=1,xsize(3)
@@ -577,13 +588,23 @@ contains
              dpdzxn(j,k)=dpdzxn(j,k)*gdt(itr)
           enddo
        enddo
-       do k=1,xsize(3)
-          do j=1,xsize(2)
-             ux(nx,j,k)=bxxn(j,k)
-             uy(nx,j,k)=bxyn(j,k)+dpdyxn(j,k)
-             uz(nx,j,k)=bxzn(j,k)+dpdzxn(j,k)
-          enddo
-       enddo
+       if (ilmn) then
+         do k=1,xsize(3)
+            do j=1,xsize(2)
+               ux(nx,j,k)=rho(nx,j,k,1)*bxxn(j,k)
+               uy(nx,j,k)=rho(nx,j,k,1)*bxyn(j,k)+dpdyxn(j,k)
+               uz(nx,j,k)=rho(nx,j,k,1)*bxzn(j,k)+dpdzxn(j,k)
+            enddo
+         enddo
+      else
+         do k=1,xsize(3)
+            do j=1,xsize(2)
+               ux(nx,j,k)=bxxn(j,k)
+               uy(nx,j,k)=bxyn(j,k)+dpdyxn(j,k)
+               uz(nx,j,k)=bxzn(j,k)+dpdzxn(j,k)
+            enddo
+         enddo
+      endif
     endif
 
 

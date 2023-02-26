@@ -1917,7 +1917,7 @@ end function cx
 subroutine calc_temp_eos(temp, rho, phi, mweight, xlen, ylen, zlen)
 
   use decomp_2d
-  use param, only : pressure0, imultispecies
+  use param, only : pressure0, imultispecies, dens1, dens2, one
   use var, only : numscalar
 
   implicit none
@@ -1933,7 +1933,7 @@ subroutine calc_temp_eos(temp, rho, phi, mweight, xlen, ylen, zlen)
   !! locals
   real(mytype), dimension(xlen, ylen, zlen) :: mweight
 
-  temp(:,:,:) = pressure0 / rho(:,:,:)
+  temp(:,:,:) = ((pressure0 / rho(:,:,:)) - one) / ((dens1 / dens2) - one)
   if (imultispecies) then
      call calc_mweight(mweight, phi, xlen, ylen, zlen)
      temp(:,:,:) = temp(:,:,:) * mweight(:,:,:)
@@ -1945,7 +1945,7 @@ endsubroutine calc_temp_eos
 subroutine calc_rho_eos(rho, temp, phi, mweight, xlen, ylen, zlen)
 
   use decomp_2d
-  use param, only : pressure0, imultispecies
+  use param, only : pressure0, imultispecies, dens1, dens2, one
   use var, only : numscalar
 
   implicit none
@@ -1961,7 +1961,7 @@ subroutine calc_rho_eos(rho, temp, phi, mweight, xlen, ylen, zlen)
   !! LOCALS
   real(mytype), dimension(xlen, ylen, zlen) :: mweight
 
-  rho(:,:,:) = pressure0 / temp(:,:,:)
+  rho(:,:,:) = pressure0 / (((dens1 / dens2) - one) * temp(:,:,:) + one)
   if (imultispecies) then
      call calc_mweight(mweight, phi, xlen, ylen, zlen)
      rho(:,:,:) = rho(:,:,:) * mweight(:,:,:)
