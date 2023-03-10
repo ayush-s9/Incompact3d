@@ -141,7 +141,7 @@ subroutine init_xcompact3d()
   ! Handle input file like a boss -- GD
   nargin=command_argument_count()
   if (nargin <1) then
-     InputFN='/home/ayush/input.i3d'
+     InputFN='input.i3d'
      if (nrank==0) write(*,*) 'Xcompact3d is run with the default file -->', trim(InputFN)
   elseif (nargin >= 1) then
      call get_command_argument(1,InputFN,FNLength,status)

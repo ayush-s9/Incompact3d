@@ -307,13 +307,14 @@ contains
       te3(:,:,:) = mu3(:,:,:) * xnu*tb3(:,:,:) - half * te3(:,:,:)
       tf3(:,:,:) = mu3(:,:,:) * xnu*tc3(:,:,:) - half * tf3(:,:,:)
     else
-      td3(:,:,:) = xnu*ta3(:,:,:) - half * td3(:,:,:)
-      te3(:,:,:) = xnu*tb3(:,:,:) - half * te3(:,:,:)
-      tf3(:,:,:) = xnu*tc3(:,:,:) - half * tf3(:,:,:)
       if ( (itype.eq.itype_user).and.(iscalar==1) ) then
          td3(:,:,:) = mu3(:,:,:) * xnu*ta3(:,:,:) - half * td3(:,:,:)
          te3(:,:,:) = mu3(:,:,:) * xnu*tb3(:,:,:) - half * te3(:,:,:)
-         tf3(:,:,:) = mu3(:,:,:) * xnu*tc3(:,:,:) - half * tf3(:,:,:)         
+         tf3(:,:,:) = mu3(:,:,:) * xnu*tc3(:,:,:) - half * tf3(:,:,:)  
+      else
+         td3(:,:,:) = xnu*ta3(:,:,:) - half * td3(:,:,:)
+         te3(:,:,:) = xnu*tb3(:,:,:) - half * te3(:,:,:)
+         tf3(:,:,:) = xnu*tc3(:,:,:) - half * tf3(:,:,:)
       end if
     endif
 
@@ -431,13 +432,14 @@ contains
       tb2(:,:,:) = mu2(:,:,:) * xnu*te2(:,:,:) + th2(:,:,:)
       tc2(:,:,:) = mu2(:,:,:) * xnu*tf2(:,:,:) + ti2(:,:,:)
     else
-      ta2(:,:,:) = xnu*td2(:,:,:) + tg2(:,:,:)
-      tb2(:,:,:) = xnu*te2(:,:,:) + th2(:,:,:)
-      tc2(:,:,:) = xnu*tf2(:,:,:) + ti2(:,:,:)
       if ( (itype.eq.itype_user).and.(iscalar==1) ) then
          ta2(:,:,:) = mu2(:,:,:) * xnu*td2(:,:,:) + tg2(:,:,:)
          tb2(:,:,:) = mu2(:,:,:) * xnu*te2(:,:,:) + th2(:,:,:)
-         tc2(:,:,:) = mu2(:,:,:) * xnu*tf2(:,:,:) + ti2(:,:,:)         
+         tc2(:,:,:) = mu2(:,:,:) * xnu*tf2(:,:,:) + ti2(:,:,:) 
+      else
+         ta2(:,:,:) = xnu*td2(:,:,:) + tg2(:,:,:)
+         tb2(:,:,:) = xnu*te2(:,:,:) + th2(:,:,:)
+         tc2(:,:,:) = xnu*tf2(:,:,:) + ti2(:,:,:)        
       end if
     endif
 
@@ -456,13 +458,14 @@ contains
       te1(:,:,:) = mu1(:,:,:) * xnu * te1(:,:,:)
       tf1(:,:,:) = mu1(:,:,:) * xnu * tf1(:,:,:)
     else
-      td1(:,:,:) = xnu * td1(:,:,:)
-      te1(:,:,:) = xnu * te1(:,:,:)
-      tf1(:,:,:) = xnu * tf1(:,:,:)
       if ( (itype.eq.itype_user).and.(iscalar==1) ) then
          td1(:,:,:) = mu1(:,:,:) * xnu * td1(:,:,:)
          te1(:,:,:) = mu1(:,:,:) * xnu * te1(:,:,:)
-         tf1(:,:,:) = mu1(:,:,:) * xnu * tf1(:,:,:) 
+         tf1(:,:,:) = mu1(:,:,:) * xnu * tf1(:,:,:)
+      else
+         td1(:,:,:) = xnu * td1(:,:,:)
+         te1(:,:,:) = xnu * te1(:,:,:)
+         tf1(:,:,:) = xnu * tf1(:,:,:)
       end if
     endif
 #ifdef DEBG
@@ -656,7 +659,7 @@ contains
     call transpose_y_to_x(th2, tg1)
 
     call derx(td1,tg1,di1,sx,ffx,fsx,fwx,xsize(1),xsize(2),xsize(3),0,zero)
-    if (ilmn) then
+    if (ilmn) then ! tg1 is the divergence of velocity, which would be zero if flow is incompressible
        dux1(:,:,:) = dux1(:,:,:) + mu1(:,:,:) * one_third * xnu * td1(:,:,:)
        duy1(:,:,:) = duy1(:,:,:) + mu1(:,:,:) * one_third * xnu * te1(:,:,:)
        duz1(:,:,:) = duz1(:,:,:) + mu1(:,:,:) * one_third * xnu * tf1(:,:,:)
