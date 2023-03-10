@@ -179,7 +179,7 @@ contains
     call alloc_x(di1)
     tdi1 = zero
     call alloc_x(ep1)
-    tep1 = zero
+    ep1 = zero
     if ((ilmn).or.((itype.eq.itype_user).and.(iscalar==1))) then
       call alloc_x(mu1, opt_global=.true.)
       mu1 = one
