@@ -68,7 +68,7 @@ program xcompact3d
 
      do itr=1,iadvance_time
 
-        call set_fluid_properties(rho1,mu1)
+        call set_fluid_properties(rho1,phi1,mu1)
         call boundary_conditions(rho1,ux1,uy1,uz1,phi1,ep1)
 
         if (imove.eq.1) then ! update epsi for moving objects
@@ -169,7 +169,7 @@ subroutine init_xcompact3d()
   ! Handle input file like a boss -- GD
   nargin=command_argument_count()
   if (nargin <1) then
-     InputFN='input.i3d'
+     InputFN='/home/ayush/input.i3d'
      if (nrank==0) write(*,*) 'Xcompact3d is run with the default file -->', trim(InputFN)
   elseif (nargin >= 1) then
      call get_command_argument(1,InputFN,FNLength,status)

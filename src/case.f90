@@ -386,7 +386,11 @@ contains
 
     implicit none
     
-    if (itype .eq. itype_tgv) then
+    if (itype .eq. itype_user) then
+
+       call visu_user_init(case_visu_init)
+
+    elseif (itype .eq. itype_tgv) then
 
        call visu_tgv_init(case_visu_init)
 
@@ -534,11 +538,12 @@ contains
   end subroutine scalar_forcing
   !##################################################################
   !##################################################################
-  subroutine set_fluid_properties(rho1, mu1)
+  subroutine set_fluid_properties(rho1, phi1, mu1)
 
     implicit none
 
     real(mytype), dimension(xsize(1), xsize(2), xsize(3)), intent(in) :: rho1
+    real(mytype),dimension(xsize(1),xsize(2),xsize(3),numscalar) :: phi1
     real(mytype), dimension(xsize(1), xsize(2), xsize(3)) :: mu1
 
     if (itype.eq.itype_lockexch) then
@@ -548,6 +553,10 @@ contains
        end if
        
     endif
+
+    if ( itype.eq.itype_user ) then
+       call set_fluid_properties_user(phi1,mu1)
+    end if
 
   endsubroutine set_fluid_properties
   !##################################################################

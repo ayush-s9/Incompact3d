@@ -1,0 +1,34 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cmake",
+			"label": "CMake: build",
+			"command": "build",
+			"targets": [
+				"all"
+			],
+			"group": "build",
+			"problemMatcher": [],
+			"detail": "CMake template build task"
+		},
+		{
+			"type": "shell",
+			"label": "xcompact_build",
+			"command": "cp",
+			"args": [
+				"${workspaceFolder}/build/bin/xcompact3d",
+				"~/xcompact3d"
+			],
+			"group":{
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": [],
+			"detail": "xcompact3d build",
+			"dependsOn":["CMake: build"],
+			"dependsOrder": "sequence"
+		},
+		
+	]
+}
