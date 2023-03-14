@@ -152,7 +152,7 @@ contains
     
     if (itype == itype_user) then
 
-       call boundary_conditions_user (ux,uy,uz,phi,ep)
+       call boundary_conditions_user (ux,uy,uz,phi)
 
     elseif (itype.eq.itype_lockexch) then
 
@@ -538,7 +538,7 @@ contains
        
     endif
 
-    if ( itype.eq.itype_user ) then
+    if ( (itype.eq.itype_user) ) then
        call set_fluid_properties_user(phi1,mu1)
     end if
 
