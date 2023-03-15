@@ -156,7 +156,7 @@ contains
     di1 = zero
     call alloc_x(ep1)
     ep1 = zero
-    if ((ilmn).or.((itype.eq.itype_user).and.(iscalar==1))) then
+    if ((ilmn).or.((itype.eq.itype_user).and.(iscalar==1)).or.((itype.eq.itype_jet).and.(iscalar==1))) then
       call alloc_x(mu1, opt_global=.true.)
       mu1 = one
     endif
@@ -363,7 +363,7 @@ contains
     allocate(duydypi2(ph1%yst(1):ph1%yen(1),nymsize,ysize(3)))
     duydypi2=zero
 
-    if ((ilmn).or.((itype.eq.itype_user).and.(iscalar==1))) then
+    if ((ilmn).or.((itype.eq.itype_user).and.(iscalar==1)).or.((itype.eq.itype_jet).and.(iscalar==1))) then
       call alloc_y(mu2)
       mu2=one
     endif
@@ -419,7 +419,7 @@ contains
     allocate(dipp3(ph1%zst(1):ph1%zen(1),ph1%zst(2):ph1%zen(2),zsize(3)))
     dipp3=zero
 
-    if ((ilmn).or.((itype.eq.itype_user).and.(iscalar==1))) then
+    if ((ilmn).or.((itype.eq.itype_user).and.(iscalar==1)).or.((itype.eq.itype_jet).and.(iscalar==1))) then
       call alloc_z(mu3)
       mu3(:,:,:) = one
     endif

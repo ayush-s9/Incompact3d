@@ -46,7 +46,7 @@ module jet
  
    PRIVATE ! All functions/subroutines private by default
    PUBLIC :: init_jet, boundary_conditions_jet, postprocess_jet, &
-             visu_jet, visu_jet_init
+             visu_jet, visu_jet_init, set_fluid_properties_jet
  
  contains
 
@@ -463,13 +463,13 @@ module jet
                    - th1(:,:,:)*tf1(:,:,:)
    !   call write_field(di1, ".", "critq", num, flush = .true.) ! Reusing temporary array, force flush
     if ( iscalar==1 ) then
-       call set_fluid_properties_user(phi1,viscosity)
+       call set_fluid_properties_jet(phi1,viscosity)
        call write_field(viscosity,".","mu",num)
     end if
 
    end subroutine visu_jet
  
-   subroutine set_fluid_properties_user(phi1,mu1)
+   subroutine set_fluid_properties_jet(phi1,mu1)
 
       USE dbg_schemes, only: sin_prec, tanh_prec, sqrt_prec, exp_prec, log_prec
       implicit none
@@ -488,7 +488,7 @@ module jet
          end do
       end do
   
-    end subroutine set_fluid_properties_user
+    end subroutine set_fluid_properties_jet
 
     subroutine interpolated_profile(r,interp_vel)
 
