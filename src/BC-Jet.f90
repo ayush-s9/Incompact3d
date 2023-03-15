@@ -406,6 +406,8 @@ module jet
      real(mytype), intent(in), dimension(ph1%zst(1):ph1%zen(1),ph1%zst(2):ph1%zen(2),nzmsize,npress) :: pp3
      real(mytype), intent(in), dimension(xsize(1),xsize(2),xsize(3),numscalar) :: phi1
      real(mytype), intent(in), dimension(xsize(1),xsize(2),xsize(3)) :: ep1
+     real(mytype), dimension(xsize(1),xsize(2),xsize(3)) :: viscosity
+
      integer, intent(in) :: num
  
      ! Write vorticity as an example of post processing
@@ -464,7 +466,7 @@ module jet
        call set_fluid_properties_user(phi1,viscosity)
        call write_field(viscosity,".","mu",num)
     end if
-    
+
    end subroutine visu_jet
  
    subroutine set_fluid_properties_user(phi1,mu1)
