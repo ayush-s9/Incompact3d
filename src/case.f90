@@ -552,6 +552,10 @@ contains
        call set_fluid_properties_user(phi1,mu1)
     end if
 
+    if ( (itype.eq.itype_jet) ) then
+      call set_fluid_properties_jet(phi1,mu1)
+   end if
+
   endsubroutine set_fluid_properties
   !##################################################################
   !##################################################################

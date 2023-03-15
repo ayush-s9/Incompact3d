@@ -40,7 +40,7 @@ program xcompact3d
 
      do itr=1,iadvance_time
 
-        if ( (itype.eq.itype_user) ) then
+        if ( (itype.eq.itype_user).or.itype.eq.itype_jet ) then
           if ( (iscalar==1) ) then
              call set_fluid_properties(rho1,phi1,mu1)            
           end if
