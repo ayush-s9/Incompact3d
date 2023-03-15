@@ -130,25 +130,25 @@ module jet
                rho(1, j, k, 1) = one
             end if
 
-            if (iscalar/=0) then
-               do is = 1, numscalar
-                  if (.not.massfrac(is)) then
-                     phi(1, j, k, is) = half * (one + tanh_prec((12.5_mytype / four) * ((D / two) / r - two * r / D)))
-                  else if (is/=primary_species) then
-                     phi(1, j, k, is) = one - half * (one + tanh_prec((12.5_mytype / four) * ((D / two) / r - two * r / D)))
-                  endif
-               enddo
+            ! if (iscalar/=0) then
+            !    do is = 1, numscalar
+            !       if (.not.massfrac(is)) then
+            !          phi(1, j, k, is) = half * (one + tanh_prec((12.5_mytype / four) * ((D / two) / r - two * r / D)))
+            !       else if (is/=primary_species) then
+            !          phi(1, j, k, is) = one - half * (one + tanh_prec((12.5_mytype / four) * ((D / two) / r - two * r / D)))
+            !       endif
+            !    enddo
 
-               if (primary_species.gt.0) then
-                  phi(1, j, k, primary_species) = one
+            !    if (primary_species.gt.0) then
+            !       phi(1, j, k, primary_species) = one
 
-                  do is = 1, numscalar
-                     if (massfrac(is).and.(is.ne.primary_species)) then
-                        phi(1, j, k, primary_species) = phi(1, j, k, primary_species) - phi(1, j, k, is)
-                     endif
-                  enddo
-               endif
-            endif
+            !       do is = 1, numscalar
+            !          if (massfrac(is).and.(is.ne.primary_species)) then
+            !             phi(1, j, k, primary_species) = phi(1, j, k, primary_species) - phi(1, j, k, is)
+            !          endif
+            !       enddo
+            !    endif
+            ! endif
             
          enddo
       enddo
@@ -233,14 +233,14 @@ module jet
         endif
         
         phi(nx,:,:,:)=phi(nx,:,:,:)-cx*(phi(nx,:,:,:)-phi(nx-1,:,:,:))
-        if (primary_species.gt.0) then
-          phi(nx,:,:,primary_species) = one
-          do is = 1, numscalar
-             if (massfrac(is).and.(is.ne.primary_species)) then
-                phi(nx,:,:,primary_species) = phi(nx,:,:,primary_species) - phi(nx,:,:,is)
-             endif
-          enddo
-        endif
+       !   if (primary_species.gt.0) then
+       !     phi(nx,:,:,primary_species) = one
+       !     do is = 1, numscalar
+       !        if (massfrac(is).and.(is.ne.primary_species)) then
+       !           phi(nx,:,:,primary_species) = phi(nx,:,:,primary_species) - phi(nx,:,:,is)
+       !        endif
+       !     enddo
+       !   endif
      endif
 
      if (ilmn) then
@@ -286,7 +286,7 @@ module jet
  
      if (iscalar==1) then
  
-        phi1(:,:,:,:) = zero !change as much as you want
+        phi1(:,:,:,:) = one !change as much as you want
  
      endif
  
