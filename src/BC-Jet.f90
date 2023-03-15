@@ -460,7 +460,11 @@ module jet
                    - tg1(:,:,:)*tc1(:,:,:) &
                    - th1(:,:,:)*tf1(:,:,:)
    !   call write_field(di1, ".", "critq", num, flush = .true.) ! Reusing temporary array, force flush
- 
+    if ( iscalar==1 ) then
+       call set_fluid_properties_user(phi1,viscosity)
+       call write_field(viscosity,".","mu",num)
+    end if
+    
    end subroutine visu_jet
  
    subroutine set_fluid_properties_user(phi1,mu1)
