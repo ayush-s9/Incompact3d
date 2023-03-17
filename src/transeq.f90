@@ -307,7 +307,7 @@ contains
       te3(:,:,:) = mu3(:,:,:) * xnu*tb3(:,:,:) - half * te3(:,:,:)
       tf3(:,:,:) = mu3(:,:,:) * xnu*tc3(:,:,:) - half * tf3(:,:,:)
     else
-      if ( (itype.eq.itype_user).and.(iscalar==1) ) then
+      if ( ((itype.eq.itype_user).and.(iscalar==1)).or.((itype.eq.itype_jet).and.(iscalar==1)) ) then
          td3(:,:,:) = mu3(:,:,:) * xnu*ta3(:,:,:) - half * td3(:,:,:)
          te3(:,:,:) = mu3(:,:,:) * xnu*tb3(:,:,:) - half * te3(:,:,:)
          tf3(:,:,:) = mu3(:,:,:) * xnu*tc3(:,:,:) - half * tf3(:,:,:)  
@@ -432,7 +432,7 @@ contains
       tb2(:,:,:) = mu2(:,:,:) * xnu*te2(:,:,:) + th2(:,:,:)
       tc2(:,:,:) = mu2(:,:,:) * xnu*tf2(:,:,:) + ti2(:,:,:)
     else
-      if ( (itype.eq.itype_user).and.(iscalar==1) ) then
+      if ( ((itype.eq.itype_user).and.(iscalar==1)).or.((itype.eq.itype_jet).and.(iscalar==1)) ) then
          ta2(:,:,:) = mu2(:,:,:) * xnu*td2(:,:,:) + tg2(:,:,:)
          tb2(:,:,:) = mu2(:,:,:) * xnu*te2(:,:,:) + th2(:,:,:)
          tc2(:,:,:) = mu2(:,:,:) * xnu*tf2(:,:,:) + ti2(:,:,:) 
@@ -458,7 +458,7 @@ contains
       te1(:,:,:) = mu1(:,:,:) * xnu * te1(:,:,:)
       tf1(:,:,:) = mu1(:,:,:) * xnu * tf1(:,:,:)
     else
-      if ( (itype.eq.itype_user).and.(iscalar==1) ) then
+      if ( ((itype.eq.itype_user).and.(iscalar==1)).or.((itype.eq.itype_jet).and.(iscalar==1)) ) then
          td1(:,:,:) = mu1(:,:,:) * xnu * td1(:,:,:)
          te1(:,:,:) = mu1(:,:,:) * xnu * te1(:,:,:)
          tf1(:,:,:) = mu1(:,:,:) * xnu * tf1(:,:,:)

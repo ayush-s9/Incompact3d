@@ -102,14 +102,15 @@ module jet
             bxz1(j,k) = zero
 
             if ( iscalar==1 ) then
-                phi(1,j,k,:) = one
+               !  phi(1,j,k,:) = one
+               phi(1,j,k,:) = half * (one + tanh_prec((120._mytype / four) * (r - (one / r)) ))
             end if
             if ( r.lt.half ) then
                 call interpolated_profile(r,interp_vel)
                 bxx1(j,k) = interp_vel
-                if ( iscalar==1 ) then
-                   phi(1,j,k,:) = zero
-                end if
+                !if ( iscalar==1 ) then
+                !   phi(1,j,k,:) = zero
+                !end if
             end if
 
             if ( r.ge.half ) then
