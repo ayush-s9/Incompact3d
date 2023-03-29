@@ -68,12 +68,15 @@ contains
     else if (jles .eq. 2) then ! WALE
        call decomp_2d_register_variable(io_turb, "nut_wale", 1, 0, output2D, mytype)
     else if (jles .eq. 3) then ! Lilly-style Dynamic Smagorinsky
+       call decomp_2d_register_variable(io_turb, "nut_smag", 1, 0, output2D, mytype) ! Written by call to smag in dynsmag
        call decomp_2d_register_variable(io_turb, "dsmagcst_final", 1, 0, output2D, mytype)
        call decomp_2d_register_variable(io_turb, "nut_dynsmag", 1, 0, output2D, mytype)
     end if
 
+#ifdef ADIOS2
     call decomp_2d_open_io(io_turb, turb_dir, decomp_2d_write_mode)
-       
+#endif
+    
   end subroutine init_explicit_les
   subroutine finalise_explicit_les()
 
@@ -304,7 +307,19 @@ contains
 
     if (mod(itime, ioutput).eq.0) then
 
-      call decomp_2d_write_one(1, nut1, turb_dir, gen_filename("", "nut_smag", itime / ioutput, ""), 2, io_turb)
+#ifdef ADIOS2
+       if (jles /= 3) then
+          call decomp_2d_start_io(io_turb, turb_dir)
+       end if
+#endif
+       call decomp_2d_write_one(1, nut1, turb_dir, &
+            gen_filename(".", "nut_smag", itime / ioutput, "bin"), &
+            2, io_turb)
+#ifdef ADIOS2
+       if (jles /= 3) then
+          call decomp_2d_end_io(io_turb, turb_dir)
+       end if
+#endif
 
     endif
 
@@ -372,11 +387,9 @@ contains
     real(mytype), dimension(ysize(1), ysize(2), ysize(3)) :: smagC2, smagC2f, dsmagcst2
     real(mytype), dimension(zsize(1), zsize(2), zsize(3)) :: smagC3, smagC3f, dsmagcst3
 
-    integer :: i,j,k, ijk, nvect1
+    integer :: i,j,k
 
     character(len = 30) :: filename
-
-    nvect1=xsize(1)*xsize(2)*xsize(3)
 
     if((iibm==1).or.(iibm==2).or.(iibm==3)) then
        ta1 = ux1 * (one - ep1)
@@ -782,11 +795,15 @@ contains
     lzz1 = lzz1 - (lxx1 + lyy1 + lzz1) / three
 
     if((iibm==1).or.(iibm==2).or.(iibm==3)) then
-       do ijk = 1, nvect1
-          if (ep1(ijk, 1, 1) .eq. one) then
-             ta1(ijk, 1, 1) = zero
-             tb1(ijk, 1, 1) = one
-          endif
+       do k = 1, xsize(3)
+          do j = 1, xsize(2)
+             do i = 1, xsize(1)
+                if (ep1(i, j, k) .eq. one) then
+                   ta1(i, j, k) = zero
+                   tb1(i, j, k) = one
+                endif
+             enddo
+          enddo
        enddo
     endif
 
@@ -794,9 +811,14 @@ contains
     smagC1 = (lxx1 * mxx1 + lyy1 * myy1 + lzz1 * mzz1 + two * (lxy1 * mxy1 + lxz1 * mxz1 + lyz1 * myz1)) / &
          (mxx1 * mxx1 + myy1 * myy1 + mzz1 * mzz1 + two * (mxy1 * mxy1 + mxz1 * mxz1 + myz1 * myz1)) !l/M
 
-    do ijk = 1, nvect1 ! Limiter for the dynamic Smagorinsky constant
-       if (smagC1(ijk, 1, 1).gt. maxdsmagcst) smagC1(ijk, 1, 1) = zero
-       if (smagC1(ijk, 1, 1).lt. 0.0) smagC1(ijk, 1, 1) = zero
+    ! Limiter for the dynamic Smagorinsky constant
+    do k = 1, xsize(3)
+       do j = 1, xsize(2)
+          do i = 1, xsize(1)
+             if (smagC1(i, j, k).gt. maxdsmagcst) smagC1(i, j, k) = zero
+             if (smagC1(i, j, k).lt. 0.0) smagC1(i, j, k) = zero
+          enddo
+       enddo
     enddo
 
     !FILTERING THE NON-CONSTANT CONSTANT
@@ -835,6 +857,12 @@ contains
     nut1 = zero; nut2 = zero
 
     ! Use the standard smagorinsky to calculate the srt_smag
+#ifdef ADIOS2
+    if (mod(itime, ioutput) == 0) then
+       ! Start IO for writing in SMAG
+       call decomp_2d_start_io(io_turb, turb_dir)
+    end if
+#endif
     call smag(nut1,ux1,uy1,uz1)
 
     call transpose_x_to_y(srt_smag, srt_smag2)
@@ -859,8 +887,11 @@ contains
       ! write(filename, "('./data/dsmagcst_initial',I4.4)") itime / imodulo
       ! call decomp_2d_write_one(1, smagC1, filename, 2)
 
-       call decomp_2d_write_one(1, dsmagcst1, turb_dir, gen_filename("", "dsmagcst_final", itime / ioutput, ""), 2, io_turb)
-       call decomp_2d_write_one(1, nut1, turb_dir, gen_filename("", "nut_dynsmag", itime / ioutput, ""), 2, io_turb)
+       call decomp_2d_write_one(1, dsmagcst1, turb_dir, gen_filename(".", "dsmagcst_final", itime / ioutput, "bin"), 2, io_turb)
+       call decomp_2d_write_one(1, nut1, turb_dir, gen_filename(".", "nut_dynsmag", itime / ioutput, "bin"), 2, io_turb)
+#ifdef ADIOS2
+       call decomp_2d_end_io(io_turb, turb_dir)
+#endif
     endif
 
   end subroutine dynsmag
@@ -1037,7 +1068,13 @@ contains
 
   if (mod(itime, ioutput).eq.0) then
 
-     call decomp_2d_write_one(1, nut1, turb_dir, gen_filename("", "nut_wale", itime / ioutput, ""), 2, io_turb)
+#ifdef ADIOS2
+     call decomp_2d_start_io(io_turb, turb_dir)
+#endif
+     call decomp_2d_write_one(1, nut1, turb_dir, gen_filename(".", "nut_wale", itime / ioutput, "bin"), 2, io_turb)
+#ifdef ADIOS2
+     call decomp_2d_end_io(io_turb, turb_dir)
+#endif
 
   endif
 
