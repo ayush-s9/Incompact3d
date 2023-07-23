@@ -261,13 +261,13 @@ module user_sim
      USE param
      USE variables
      USE decomp_2d
-     use dbg_schemes, only: sqrt_prec
+     use dbg_schemes, only: sqrt_prec, abs_prec
  
      implicit none
  
      real(mytype),dimension(xsize(1),xsize(2),xsize(3)) :: ux,uy,uz,ep
      real(mytype),dimension(xsize(1),xsize(2),xsize(3),numscalar) :: phi
-     real(mytype) :: dr,y,z,ctheta,stheta,r
+     real(mytype) :: dr,y,z,ctheta,stheta,r,denominator
      integer :: i,j,k,jm,km
      
      call inflow (phi)
@@ -291,12 +291,27 @@ module user_sim
                    r = sqrt_prec(y**2 + z**2)
 
                    if ( (r.le.(one)).or.(r.ge.(one - dr)) ) then
-                      jm = j - (abs(y)/y)
-                      km = k - (abs(z)/z)
-                      ctheta = z/r
-                      stheta = y/r
-                      phi(i,j,k,:) = ((phi(i,j,km,:) * dy * ctheta) + (phi(i,jm,k,:) * dz * stheta)) &
-                                    / ((dy*ctheta)+(dz*stheta)) 
+                     
+                     ctheta = z/r
+                     stheta = y/r 
+                     
+                     if (y.ge.zero) then
+                         if ( z.ge.0 ) then
+                            phi(i,j,k,:) = (phi(i,j,k-1,:)*dy*ctheta) + (phi(i,j-1,k,:)*dz*stheta)
+                            phi(i,j,k,:) = phi(i,j,k,:) / (dy*ctheta + dz*stheta)
+                         else
+                            phi(i,j,k,:) = (-phi(i,j,k+1,:)*dy*ctheta) + (phi(i,j-1,k,:)*dz*stheta)
+                            phi(i,j,k,:) = phi(i,j,k,:) / (-dy*ctheta + dz*stheta)
+                         end if
+                     else
+                        if ( z.ge.0 ) then
+                           phi(i,j,k,:) = (phi(i,j,k-1,:)*dy*ctheta) + (-phi(i,j+1,k,:)*dz*stheta)
+                           phi(i,j,k,:) = phi(i,j,k,:) / (dy*ctheta - dz*stheta)
+                        else
+                           phi(i,j,k,:) = (phi(i,j,k+1,:)*dy*ctheta) + (phi(i,j+1,k,:)*dz*stheta)
+                           phi(i,j,k,:) = phi(i,j,k,:) / (dy*ctheta + dz*stheta)
+                        end if                        
+                     endif
                    end if
                enddo
            end do
