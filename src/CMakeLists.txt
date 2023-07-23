@@ -31,8 +31,8 @@ add_executable(xcompact3d
                     BC-User.f90
                     case.f90
                     constants.f90
-                    ../dependencies/quadpack/quadpack.f90
-                    ../dependencies/interpolation/splines.f90
+                    ../dependencies/quadpack.f90
+                    ../dependencies/splines.f90
                     derive.f90
                     dynstall.f90
                     dynstall_legacy.f90
