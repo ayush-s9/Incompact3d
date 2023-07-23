@@ -37,7 +37,7 @@ restart*
 forces.dat*
 # <<<<<<< var_visc_inc
 # examples/
-# tests/
+tests/
 # =======
 # data/
 # >>>>>>> master
