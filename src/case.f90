@@ -21,6 +21,7 @@ module case
   use uniform
   use sandbox
   use cavity
+  use jet
 
   use var, only : nzmsize
 
@@ -90,10 +91,10 @@ contains
 
        call init_mixlayer(rho1, ux1, uy1, uz1)
 
-!!!    elseif (itype.eq.itype_jet) then
-!!!
-!!!       call init_jet(rho1, ux1, uy1, uz1, ep1, phi1)
-!!!
+   elseif (itype.eq.itype_jet) then
+
+      call init_jet(rho1, ux1, uy1, uz1, ep1, phi1)
+
     elseif (itype.eq.itype_tbl) then
 
        call init_tbl (ux1, uy1, uz1, ep1, phi1)
@@ -152,7 +153,7 @@ contains
     
     if (itype == itype_user) then
 
-       call boundary_conditions_user (ux,uy,uz,phi,ep)
+       call boundary_conditions_user (ux,uy,uz,phi)
 
     elseif (itype.eq.itype_lockexch) then
 
@@ -178,10 +179,10 @@ contains
 
        call boundary_conditions_dbg (ux, uy, uz, phi)
 
-!!!    elseif (itype.eq.itype_jet) then
-!!!
-!!!       call boundary_conditions_jet (rho,ux,uy,uz,phi)
-!!!
+   elseif (itype.eq.itype_jet) then
+
+      call boundary_conditions_jet (rho,ux,uy,uz,phi)
+
     elseif (itype.eq.itype_tbl) then
 
        call boundary_conditions_tbl (ux, uy, uz, phi)
@@ -340,10 +341,10 @@ contains
 
        call postprocess_dbg (ux, uy, uz, phi, ep)
 
-!!!    elseif (itype.eq.itype_jet) then
-!!!
-!!!       call postprocess_jet (ux, uy, uz, phi, ep)
-!!!
+   elseif (itype.eq.itype_jet) then
+
+      call postprocess_jet (ux, uy, uz, phi, ep)
+
     elseif (itype.eq.itype_tbl) then
 
        call postprocess_tbl (ux, uy, uz, ep)
@@ -383,7 +384,11 @@ contains
 
     implicit none
     
-    if (itype .eq. itype_tgv) then
+    if (itype .eq. itype_user) then
+
+       call visu_user_init(case_visu_init)
+
+    elseif (itype .eq. itype_tgv) then
 
        call visu_tgv_init(case_visu_init)
 
@@ -406,6 +411,10 @@ contains
     else if (itype .eq. itype_lockexch) then
 
        call visu_lockexch_init(case_visu_init)
+
+    else if (itype .eq. itype_lockexch) then
+
+       call visu_jet_init(case_visu_init)
 
     else if (itype .eq. itype_uniform) then
 
@@ -463,6 +472,11 @@ contains
     elseif (itype.eq.itype_tbl) then
 
        call visu_tbl(ux1, uy1, uz1, pp3, phi1, ep1, num)
+       called_visu = .true.
+
+    elseif (itype.eq.itype_tbl) then
+
+       call visu_jet(ux1, uy1, uz1, pp3, phi1, ep1, num)
        called_visu = .true.
        
     elseif (itype.eq.itype_uniform) then
@@ -540,11 +554,12 @@ contains
   end subroutine scalar_forcing
   !##################################################################
   !##################################################################
-  subroutine set_fluid_properties(rho1, mu1)
+  subroutine set_fluid_properties(rho1, phi1, mu1)
 
     implicit none
 
     real(mytype), dimension(xsize(1), xsize(2), xsize(3)), intent(in) :: rho1
+    real(mytype),dimension(xsize(1),xsize(2),xsize(3),numscalar) :: phi1
     real(mytype), dimension(xsize(1), xsize(2), xsize(3)) :: mu1
 
     if (itype.eq.itype_lockexch) then
@@ -554,6 +569,14 @@ contains
        end if
        
     endif
+
+    if ( (itype.eq.itype_user) ) then
+       call set_fluid_properties_user(phi1,mu1)
+    end if
+
+    if ( (itype.eq.itype_jet) ) then
+      call set_fluid_properties_jet(phi1,mu1)
+   end if
 
   endsubroutine set_fluid_properties
   !##################################################################

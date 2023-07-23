@@ -169,6 +169,9 @@ contains
        call transpose_x_to_y(mu1,mu2)
     else
        rho2(:,:,:) = one
+       if ( (itype.eq.itype_user).and.(iscalar==1) ) then
+          call transpose_x_to_y(mu1,mu2)
+       end if
     endif
 
     !WORK Y-PENCILS
@@ -241,6 +244,9 @@ contains
        td3(:,:,:) = ux3(:,:,:) * uz3(:,:,:)
        te3(:,:,:) = uy3(:,:,:) * uz3(:,:,:)
        tf3(:,:,:) = uz3(:,:,:) * uz3(:,:,:)
+       if ( (itype.eq.itype_user).and.(iscalar==1) ) then
+          call transpose_y_to_z(mu2,mu3)
+       end if
     endif
 #ifdef DEBG
     dep=maxval(abs(td3))
@@ -301,9 +307,15 @@ contains
       te3(:,:,:) = mu3(:,:,:) * xnu*tb3(:,:,:) - half * te3(:,:,:)
       tf3(:,:,:) = mu3(:,:,:) * xnu*tc3(:,:,:) - half * tf3(:,:,:)
     else
-      td3(:,:,:) = xnu*ta3(:,:,:) - half * td3(:,:,:)
-      te3(:,:,:) = xnu*tb3(:,:,:) - half * te3(:,:,:)
-      tf3(:,:,:) = xnu*tc3(:,:,:) - half * tf3(:,:,:)
+      if ( ((itype.eq.itype_user).and.(iscalar==1)).or.((itype.eq.itype_jet).and.(iscalar==1)) ) then
+         td3(:,:,:) = mu3(:,:,:) * xnu*ta3(:,:,:) - half * td3(:,:,:)
+         te3(:,:,:) = mu3(:,:,:) * xnu*tb3(:,:,:) - half * te3(:,:,:)
+         tf3(:,:,:) = mu3(:,:,:) * xnu*tc3(:,:,:) - half * tf3(:,:,:)  
+      else
+         td3(:,:,:) = xnu*ta3(:,:,:) - half * td3(:,:,:)
+         te3(:,:,:) = xnu*tb3(:,:,:) - half * te3(:,:,:)
+         tf3(:,:,:) = xnu*tc3(:,:,:) - half * tf3(:,:,:)
+      end if
     endif
 
     !WORK Y-PENCILS
@@ -420,9 +432,15 @@ contains
       tb2(:,:,:) = mu2(:,:,:) * xnu*te2(:,:,:) + th2(:,:,:)
       tc2(:,:,:) = mu2(:,:,:) * xnu*tf2(:,:,:) + ti2(:,:,:)
     else
-      ta2(:,:,:) = xnu*td2(:,:,:) + tg2(:,:,:)
-      tb2(:,:,:) = xnu*te2(:,:,:) + th2(:,:,:)
-      tc2(:,:,:) = xnu*tf2(:,:,:) + ti2(:,:,:)
+      if ( ((itype.eq.itype_user).and.(iscalar==1)).or.((itype.eq.itype_jet).and.(iscalar==1)) ) then
+         ta2(:,:,:) = mu2(:,:,:) * xnu*td2(:,:,:) + tg2(:,:,:)
+         tb2(:,:,:) = mu2(:,:,:) * xnu*te2(:,:,:) + th2(:,:,:)
+         tc2(:,:,:) = mu2(:,:,:) * xnu*tf2(:,:,:) + ti2(:,:,:) 
+      else
+         ta2(:,:,:) = xnu*td2(:,:,:) + tg2(:,:,:)
+         tb2(:,:,:) = xnu*te2(:,:,:) + th2(:,:,:)
+         tc2(:,:,:) = xnu*tf2(:,:,:) + ti2(:,:,:)        
+      end if
     endif
 
     !WORK X-PENCILS
@@ -440,9 +458,15 @@ contains
       te1(:,:,:) = mu1(:,:,:) * xnu * te1(:,:,:)
       tf1(:,:,:) = mu1(:,:,:) * xnu * tf1(:,:,:)
     else
-      td1(:,:,:) = xnu * td1(:,:,:)
-      te1(:,:,:) = xnu * te1(:,:,:)
-      tf1(:,:,:) = xnu * tf1(:,:,:)
+      if ( ((itype.eq.itype_user).and.(iscalar==1)).or.((itype.eq.itype_jet).and.(iscalar==1)) ) then
+         td1(:,:,:) = mu1(:,:,:) * xnu * td1(:,:,:)
+         te1(:,:,:) = mu1(:,:,:) * xnu * te1(:,:,:)
+         tf1(:,:,:) = mu1(:,:,:) * xnu * tf1(:,:,:)
+      else
+         td1(:,:,:) = xnu * td1(:,:,:)
+         te1(:,:,:) = xnu * te1(:,:,:)
+         tf1(:,:,:) = xnu * tf1(:,:,:)
+      end if
     endif
 #ifdef DEBG
     dep=maxval(abs(td1))
@@ -473,6 +497,10 @@ contains
 #endif
     if (ilmn) then
        call momentum_full_viscstress_tensor(dux1(:,:,:,1), duy1(:,:,:,1), duz1(:,:,:,1), divu3, mu1)
+    else
+       if ( (itype.eq.itype_user).and.(iscalar==1) ) then
+          call momentum_full_viscstress_tensor(dux1(:,:,:,1), duy1(:,:,:,1), duz1(:,:,:,1), divu3, mu1)
+       end if
     endif
 #ifdef DEBG
     dep=maxval(abs(dux1))
@@ -620,7 +648,7 @@ contains
     real(mytype) :: one_third
 
     one_third = one / three
-
+    
     call derz (tc3,divu3,di3,sz,ffz,fsz,fwz,zsize(1),zsize(2),zsize(3),0,zero)
     call transpose_z_to_y(tc3, tc2)
     call transpose_z_to_y(divu3, th2)
@@ -631,17 +659,22 @@ contains
     call transpose_y_to_x(th2, tg1)
 
     call derx(td1,tg1,di1,sx,ffx,fsx,fwx,xsize(1),xsize(2),xsize(3),0,zero)
-
-    dux1(:,:,:) = dux1(:,:,:) + mu1(:,:,:) * one_third * xnu * td1(:,:,:)
-    duy1(:,:,:) = duy1(:,:,:) + mu1(:,:,:) * one_third * xnu * te1(:,:,:)
-    duz1(:,:,:) = duz1(:,:,:) + mu1(:,:,:) * one_third * xnu * tf1(:,:,:)
+    if (ilmn) then ! tg1 is the divergence of velocity, which would be zero if flow is incompressible
+       dux1(:,:,:) = dux1(:,:,:) + mu1(:,:,:) * one_third * xnu * td1(:,:,:)
+       duy1(:,:,:) = duy1(:,:,:) + mu1(:,:,:) * one_third * xnu * te1(:,:,:)
+       duz1(:,:,:) = duz1(:,:,:) + mu1(:,:,:) * one_third * xnu * tf1(:,:,:)
+    endif
 
     !! Variable viscosity part
     call derx (ta1,ux1,di1,sx,ffx,fsx,fwx,xsize(1),xsize(2),xsize(3),0,ubcx)
     call derx (tb1,uy1,di1,sx,ffxp,fsxp,fwxp,xsize(1),xsize(2),xsize(3),1,ubcy)
     call derx (tc1,uz1,di1,sx,ffxp,fsxp,fwxp,xsize(1),xsize(2),xsize(3),1,ubcz)
     call derx (td1,mu1,di1,sx,ffxp,fsxp,fwxp,xsize(1),xsize(2),xsize(3),1,zero)
-    ta1(:,:,:) = two * ta1(:,:,:) - (two * one_third) * tg1(:,:,:)
+    if (ilmn) then
+       ta1(:,:,:) = two * ta1(:,:,:) - (two * one_third) * tg1(:,:,:)
+    else
+       ta1(:,:,:) = two * ta1(:,:,:)
+    endif
 
     ta1(:,:,:) = td1(:,:,:) * ta1(:,:,:)
     tb1(:,:,:) = td1(:,:,:) * tb1(:,:,:)
@@ -655,7 +688,11 @@ contains
     call dery (td2,ux2,di2,sy,ffyp,fsyp,fwyp,ppy,ysize(1),ysize(2),ysize(3),1,ubcx)
     call dery (te2,uy2,di2,sy,ffy,fsy,fwy,ppy,ysize(1),ysize(2),ysize(3),0,ubcy)
     call dery (tf2,uz2,di2,sy,ffyp,fsyp,fwyp,ppy,ysize(1),ysize(2),ysize(3),1,ubcz)
-    te2(:,:,:) = two * te2(:,:,:) - (two * one_third) * th2(:,:,:)
+    if ( ilmn ) then
+       te2(:,:,:) = two * te2(:,:,:) - (two * one_third) * th2(:,:,:) 
+    else
+       te2(:,:,:) = two * te2(:,:,:)     
+    end if
 
     call transpose_x_to_y(mu1, ti2)
     call dery (th2,ti2,di2,sy,ffyp,fsyp,fwyp,ppy,ysize(1),ysize(2),ysize(3),1,zero)
@@ -674,7 +711,11 @@ contains
     call derz (td3,ux3,di3,sz,ffzp,fszp,fwzp,zsize(1),zsize(2),zsize(3),1,ubcx)
     call derz (te3,uy3,di3,sz,ffzp,fszp,fwzp,zsize(1),zsize(2),zsize(3),1,ubcy)
     call derz (tf3,uz3,di3,sz,ffz,fsz,fwz,zsize(1),zsize(2),zsize(3),0,ubcz)
-    tf3(:,:,:) = two * tf3(:,:,:) - (two * one_third) * divu3(:,:,:)
+    if ( ilmn ) then
+       tf3(:,:,:) = two * tf3(:,:,:) - (two * one_third) * divu3(:,:,:)
+    else
+       tf3(:,:,:) = two * tf3(:,:,:)  
+    end if
 
     tc3(:,:,:) = tc3(:,:,:) + tg3(:,:,:) * td3(:,:,:) + th3(:,:,:) * te3(:,:,:)
 

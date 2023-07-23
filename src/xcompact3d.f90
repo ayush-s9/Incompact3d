@@ -40,7 +40,13 @@ program xcompact3d
 
      do itr=1,iadvance_time
 
-        call set_fluid_properties(rho1,mu1)
+        if ( (itype.eq.itype_user).or.itype.eq.itype_jet ) then
+          if ( (iscalar==1) ) then
+             call set_fluid_properties(rho1,phi1,mu1)            
+          end if
+        else
+          call set_fluid_properties(rho1,phi1,mu1)
+        end if
         call boundary_conditions(rho1,ux1,uy1,uz1,phi1,ep1)
 
         if (imove.eq.1) then ! update epsi for moving objects

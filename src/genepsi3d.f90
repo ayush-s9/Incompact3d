@@ -50,6 +50,7 @@ contains
     USE cyl, ONLY : geomcomplex_cyl
     USE hill, ONLY : geomcomplex_hill
     USE channel, ONLY : geomcomplex_channel
+    !USE user_sim, ONLY : geomcomplex_user
     USE sandbox, ONLY : geomcomplex_sandbox
 
     IMPLICIT NONE
@@ -71,6 +72,10 @@ contains
     ELSEIF (itype.EQ.itype_channel) THEN
 
        CALL geomcomplex_channel(epsi, nxi, nxf, ny, nyi, nyf, nzi, nzf, yp, remp)
+
+    ELSEIF (itype.EQ.itype_channel) THEN
+
+      CALL geomcomplex_cyl(epsi, nxi, nxf, ny, nyi, nyf, nzi, nzf, dx, yp, remp)
 
     ELSEIF (itype.EQ.itype_sandbox) THEN
      

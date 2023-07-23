@@ -29,13 +29,13 @@
 !    problems with up to 0(10^5) computational cores, Int. J. of Numerical
 !    Methods in Fluids, vol 67 (11), pp 1735-1757
 !################################################################################
-! User Defined Case -- Jet
-module user_sim
+
+module jet
 
    USE decomp_2d
    USE variables
    USE param
-
+ 
    IMPLICIT NONE
  
    integer :: FS
@@ -45,12 +45,12 @@ module user_sim
    LOGICAL :: initialising
  
    PRIVATE ! All functions/subroutines private by default
-   PUBLIC :: init_user, boundary_conditions_user, postprocess_user, &
-             visu_user, visu_user_init, set_fluid_properties_user
+   PUBLIC :: init_jet, boundary_conditions_jet, postprocess_jet, &
+             visu_jet, visu_jet_init, set_fluid_properties_jet
  
  contains
 
-   subroutine boundary_conditions_user (ux,uy,uz,phi)
+   subroutine boundary_conditions_jet (rho,ux,uy,uz,phi)
  
      USE param
      USE variables
@@ -59,20 +59,21 @@ module user_sim
      implicit none
  
      real(mytype),dimension(xsize(1),xsize(2),xsize(3)) :: ux,uy,uz
+     real(mytype),dimension(xsize(1),xsize(2),xsize(3),nrhotime) :: rho
      real(mytype),dimension(xsize(1),xsize(2),xsize(3),numscalar) :: phi
      
      
-     call inflow (phi)
+     call inflow (rho,phi)
      if (initialising) then
          return
      endif
 
-     call outflow (ux,uy,uz,phi)
+     call outflow (rho,ux,uy,uz,phi)
  
      return
-   end subroutine boundary_conditions_user
+   end subroutine boundary_conditions_jet
    !********************************************************************
-   subroutine inflow (phi)
+   subroutine inflow (rho,phi)
  
      USE param
      USE variables
@@ -86,6 +87,7 @@ module user_sim
      integer  :: i,j,k,is
      real(mytype) :: D, r, y, z, interp_vel
      real(mytype),dimension(xsize(1),xsize(2),xsize(3),numscalar) :: phi
+     real(mytype),dimension(xsize(1),xsize(2),xsize(3),nrhotime) :: rho
  
      D = one
 
@@ -100,33 +102,34 @@ module user_sim
             bxz1(j,k) = zero
 
             if ( iscalar==1 ) then
-                phi(1,j,k,:) = one
+               !  phi(1,j,k,:) = one
+               phi(1,j,k,:) = half * (one + tanh_prec((120._mytype / four) * (r - (one / r)) ))
             end if
             if ( r.lt.half ) then
                 call interpolated_profile(r,interp_vel)
                 bxx1(j,k) = interp_vel
-                if ( iscalar==1 ) then
-                   phi(1,j,k,:) = zero
-                end if
+                !if ( iscalar==1 ) then
+                !   phi(1,j,k,:) = zero
+                !end if
             end if
 
             if ( r.ge.half ) then
                 bxx1(j,k) = zero
             end if
 
-            ! if (ilmn) then
-            !    if (.not.ilmn_solve_temp) then
-            !       rho(1, j, k, 1) = dens1 -  (dens1 - dens2) * half &
-            !             * (one + tanh_prec((12.5_mytype / four) * ((D / two) / r - two * r / D))) 
-            !    else
-            !       rho(1, j, k, 1) = dens1 -  (dens1 - dens2) * half &
-            !             * (one + tanh_prec((12.5_mytype / four) * ((D / two) / r - two * r / D))) 
-            !       !setting the temperature according to the desired density distribution
-            !       ta1(1, j, k) = ((pressure0 / rho(1, j, k, 1)) - one) / ((dens1 / dens2) - one)
-            !    end if
-            !  ! else 
-            !  !    rho(1, j, k, 1) = one
-            ! end if
+            if (ilmn) then
+               if (.not.ilmn_solve_temp) then
+                  rho(1, j, k, 1) = dens1 -  (dens1 - dens2) * half &
+                        * (one + tanh_prec((12.5_mytype / four) * ((D / two) / r - two * r / D))) 
+               else
+                  rho(1, j, k, 1) = dens1 -  (dens1 - dens2) * half &
+                        * (one + tanh_prec((12.5_mytype / four) * ((D / two) / r - two * r / D))) 
+                  !setting the temperature according to the desired density distribution
+                  ta1(1, j, k) = ((pressure0 / rho(1, j, k, 1)) - one) / ((dens1 / dens2) - one)
+               end if
+            else 
+               rho(1, j, k, 1) = one
+            end if
 
             ! if (iscalar/=0) then
             !    do is = 1, numscalar
@@ -151,9 +154,9 @@ module user_sim
          enddo
       enddo
       
-       ! if (ilmn.and.ilmn_solve_temp) then
-       !    CALL calc_rho_eos(rho(1,:,:,1), ta1(1,:,:), phi(1,:,:,:), tb1(1,:,:), 1, xsize(2), xsize(3))
-       ! endif
+      if (ilmn.and.ilmn_solve_temp) then
+         CALL calc_rho_eos(rho(1,:,:,1), ta1(1,:,:), phi(1,:,:,:), tb1(1,:,:), 1, xsize(2), xsize(3))
+      endif
 
       ! Mean Inflow + Inflow Noise
       call random_number(bxo)
@@ -170,7 +173,7 @@ module user_sim
      return
    end subroutine inflow
    !********************************************************************
-   subroutine outflow (ux,uy,uz,phi)
+   subroutine outflow (rho,ux,uy,uz,phi)
  
      USE param
      USE variables
@@ -184,6 +187,7 @@ module user_sim
      integer :: j,k,code,is
      real(mytype),dimension(xsize(1),xsize(2),xsize(3)) :: ux,uy,uz
      real(mytype),dimension(xsize(1),xsize(2),xsize(3),numscalar) :: phi
+     real(mytype),dimension(xsize(1),xsize(2),xsize(3),nrhotime) :: rho
      real(mytype) :: udx,udy,udz,uddx,uddy,uddz,cx,uxmin,uxmax,uxmin1,uxmax1
  
      udx=one/dx; udy=one/dy; udz=one/dz; uddx=half/dx; uddy=half/dy; uddz=half/dz
@@ -230,30 +234,30 @@ module user_sim
         endif
         
         phi(nx,:,:,:)=phi(nx,:,:,:)-cx*(phi(nx,:,:,:)-phi(nx-1,:,:,:))
-        if (primary_species.gt.0) then
-          phi(nx,:,:,primary_species) = one
-          do is = 1, numscalar
-             if (massfrac(is).and.(is.ne.primary_species)) then
-                phi(nx,:,:,primary_species) = phi(nx,:,:,primary_species) - phi(nx,:,:,is)
-             endif
-          enddo
-        endif
+       !   if (primary_species.gt.0) then
+       !     phi(nx,:,:,primary_species) = one
+       !     do is = 1, numscalar
+       !        if (massfrac(is).and.(is.ne.primary_species)) then
+       !           phi(nx,:,:,primary_species) = phi(nx,:,:,primary_species) - phi(nx,:,:,is)
+       !        endif
+       !     enddo
+       !   endif
      endif
 
-    !   if (ilmn) then
-    !     if (.not.ilmn_solve_temp) then
-    !        rho(nx, :, :, 1) = rho(nx, :, :, 1) &
-    !             - cx * (rho(nx, :, :, 1) - rho(nx - 1, :, :, 1))
-    !     else
-    !        !! Compute temperature at j-1:j to form advection equation
-    !        CALL calc_temp_eos(ta1(nx-1:nx,:,:),rho(nx-1:nx,:,:,1),phi(nx-1:nx,:,:,:),tb1(nx-1:nx,:,:),2,xsize(2),xsize(3))
-  
-    !        ta1(nx,:,:) = ta1(nx,:,:) - cx * (ta1(nx,:,:) - ta1(nx-1,:,:))
-  
-    !        !! Need to compute rho (on boundary)
-    !        CALL calc_rho_eos(rho(nx,:,:,1), ta1(nx,:,:), phi(nx,:,:,:), tb1(nx,:,:),1, xsize(2), xsize(3))
-    !     endif
-    !  endif
+     if (ilmn) then
+       if (.not.ilmn_solve_temp) then
+          rho(nx, :, :, 1) = rho(nx, :, :, 1) &
+               - cx * (rho(nx, :, :, 1) - rho(nx - 1, :, :, 1))
+       else
+          !! Compute temperature at j-1:j to form advection equation
+          CALL calc_temp_eos(ta1(nx-1:nx,:,:),rho(nx-1:nx,:,:,1),phi(nx-1:nx,:,:,:),tb1(nx-1:nx,:,:),2,xsize(2),xsize(3))
+ 
+          ta1(nx,:,:) = ta1(nx,:,:) - cx * (ta1(nx,:,:) - ta1(nx-1,:,:))
+ 
+          !! Need to compute rho (on boundary)
+          CALL calc_rho_eos(rho(nx,:,:,1), ta1(nx,:,:), phi(nx,:,:,:), tb1(nx,:,:),1, xsize(2), xsize(3))
+       endif
+    endif
 
      if (nrank==0.and.(mod(itime, ilist) == 0 .or. itime == ifirst .or. itime == ilast)) &
         write(*,*) "Outflow velocity ux nx=n min max=",real(uxmin1,4),real(uxmax1,4)
@@ -261,7 +265,7 @@ module user_sim
      return
    end subroutine outflow
    !********************************************************************
-   subroutine init_user (ux1,uy1,uz1,ep1,phi1)
+   subroutine init_jet (rho1,ux1,uy1,uz1,ep1,phi1)
  
      USE decomp_2d
      USE decomp_2d_io
@@ -273,6 +277,7 @@ module user_sim
      implicit none
  
      real(mytype),dimension(xsize(1),xsize(2),xsize(3)) :: ux1,uy1,uz1,ep1
+     real(mytype),dimension(xsize(1),xsize(2),xsize(3),nrhotime) :: rho1
      real(mytype),dimension(xsize(1),xsize(2),xsize(3),numscalar) :: phi1
 
      logical :: col_init
@@ -282,7 +287,7 @@ module user_sim
  
      if (iscalar==1) then
  
-        phi1(:,:,:,:) = zero !change as much as you want
+        phi1(:,:,:,:) = one !change as much as you want
  
      endif
  
@@ -310,7 +315,7 @@ module user_sim
      endif
 
      initialising = .true.
-     call boundary_conditions_user (ux1,uy1,uz1,phi1)
+     call boundary_conditions_jet (rho1,ux1,uy1,uz1,phi1)
      initialising = .false.
      
      do j = 1, xsize(2)
@@ -331,7 +336,9 @@ module user_sim
                  ux1(i,j,k)=ux1(i,j,k) + ux1(1,j,k)
                  uy1(i,j,k)=uy1(i,j,k) + uy1(1,j,k)
                  uz1(i,j,k)=uz1(i,j,k) + uz1(1,j,k)
-                 phi1(i,j,k,:)=phi1(i,j,k,:) + phi1(1,j,k,:)
+
+                 rho1(i,j,k,1)=rho1(1,j,k,1)
+                 phi1(i,j,k,:)=phi1(1,j,k,:)
               enddo
            enddo
         enddo
@@ -342,127 +349,128 @@ module user_sim
 #endif
  
      return
-   end subroutine init_user
+   end subroutine init_jet
    !********************************************************************
  
    !############################################################################
-   subroutine postprocess_user(ux1,uy1,uz1,phi1,ep1)
+   subroutine postprocess_jet(ux1,uy1,uz1,phi1,ep1)
+ 
+     USE MPI
+     USE decomp_2d
+     USE decomp_2d_io
+     USE var, only : uvisu
+     USE var, only : ta1,tb1,tc1,td1,te1,tf1,tg1,th1,ti1,di1
+     USE var, only : ta2,tb2,tc2,td2,te2,tf2,di2,ta3,tb3,tc3,td3,te3,tf3,di3
+     USE ibm_param
+     use dbg_schemes, only: sqrt_prec
+     
+     real(mytype),intent(in),dimension(xsize(1),xsize(2),xsize(3)) :: ux1, uy1, uz1, ep1
+     real(mytype),intent(in),dimension(xsize(1),xsize(2),xsize(3),numscalar) :: phi1
+ 
+   end subroutine postprocess_jet
+ 
+   subroutine visu_jet_init (visu_initialised)
+ 
+     use decomp_2d, only : mytype
+     use decomp_2d_io, only : decomp_2d_register_variable
+     use visu, only : io_name, output2D
+     
+     implicit none
+ 
+     logical, intent(out) :: visu_initialised
+ 
+     call decomp_2d_register_variable(io_name, "vort", 1, 0, output2D, mytype)
+     call decomp_2d_register_variable(io_name, "critq", 1, 0, output2D, mytype)
+ 
+     visu_initialised = .true.
+     
+   end subroutine visu_jet_init
+   !############################################################################
+   !!
+   !!  SUBROUTINE: visu_jet
+   !!      AUTHOR: FS
+   !! DESCRIPTION: Performs jetinder-specific visualization
+   !!
+   !############################################################################
+   subroutine visu_jet(ux1, uy1, uz1, pp3, phi1, ep1, num)
+ 
+     use var, only : ux2, uy2, uz2, ux3, uy3, uz3
+     USE var, only : ta1,tb1,tc1,td1,te1,tf1,tg1,th1,ti1,di1
+     USE var, only : ta2,tb2,tc2,td2,te2,tf2,di2,ta3,tb3,tc3,td3,te3,tf3,di3
+     use var, ONLY : nxmsize, nymsize, nzmsize
+     use visu, only : write_field
+     use ibm_param, only : ubcx,ubcy,ubcz
+ 
+     implicit none
+ 
+     real(mytype), intent(in), dimension(xsize(1),xsize(2),xsize(3)) :: ux1, uy1, uz1
+     real(mytype), intent(in), dimension(ph1%zst(1):ph1%zen(1),ph1%zst(2):ph1%zen(2),nzmsize,npress) :: pp3
+     real(mytype), intent(in), dimension(xsize(1),xsize(2),xsize(3),numscalar) :: phi1
+     real(mytype), intent(in), dimension(xsize(1),xsize(2),xsize(3)) :: ep1
+     real(mytype), dimension(xsize(1),xsize(2),xsize(3)) :: viscosity
 
-      USE MPI
-      USE decomp_2d
-      USE decomp_2d_io
-      USE var, only : uvisu
-      USE var, only : ta1,tb1,tc1,td1,te1,tf1,tg1,th1,ti1,di1
-      USE var, only : ta2,tb2,tc2,td2,te2,tf2,di2,ta3,tb3,tc3,td3,te3,tf3,di3
-      USE ibm_param
-      use dbg_schemes, only: sqrt_prec
-      
-      real(mytype),intent(in),dimension(xsize(1),xsize(2),xsize(3)) :: ux1, uy1, uz1, ep1
-      real(mytype), intent(in), dimension(xsize(1),xsize(2),xsize(3),numscalar) :: phi1
-  
-    end subroutine postprocess_user
-  
-    subroutine visu_user_init (visu_initialised)
-  
-      use decomp_2d, only : mytype
-      use decomp_2d_io, only : decomp_2d_register_variable
-      use visu, only : io_name, output2D
-      
-      implicit none
-  
-      logical, intent(out) :: visu_initialised
-  
-      !call decomp_2d_register_variable(io_name, "vort", 1, 0, output2D, mytype)
-      !call decomp_2d_register_variable(io_name, "critq", 1, 0, output2D, mytype)
-  
-      visu_initialised = .true.
-      
-    end subroutine visu_user_init
-    !############################################################################
-    !!
-    !!  SUBROUTINE: visu_user
-    !!      AUTHOR: FS
-    !! DESCRIPTION: Performs user-specific visualization
-    !!
-    !############################################################################
-    subroutine visu_user(ux1, uy1, uz1, pp3, phi1, ep1, num)
-  
-      use var, only : ux2, uy2, uz2, ux3, uy3, uz3
-      USE var, only : ta1,tb1,tc1,td1,te1,tf1,tg1,th1,ti1,di1
-      USE var, only : ta2,tb2,tc2,td2,te2,tf2,di2,ta3,tb3,tc3,td3,te3,tf3,di3
-      use var, ONLY : nxmsize, nymsize, nzmsize
-      use visu, only : write_field
-      use ibm_param, only : ubcx,ubcy,ubcz
-  
-      implicit none
-  
-      real(mytype), intent(in), dimension(xsize(1),xsize(2),xsize(3)) :: ux1, uy1, uz1
-      real(mytype), intent(in), dimension(ph1%zst(1):ph1%zen(1),ph1%zst(2):ph1%zen(2),nzmsize,npress) :: pp3
-      real(mytype), intent(in), dimension(xsize(1),xsize(2),xsize(3),numscalar) :: phi1
-      real(mytype), intent(in), dimension(xsize(1),xsize(2),xsize(3)) :: ep1
-      real(mytype), dimension(xsize(1),xsize(2),xsize(3)) :: viscosity
-      integer, intent(in) :: num
-  
-      ! Write vorticity as an example of post processing
-  
-      ! Perform communications if needed
-     !  if (sync_vel_needed) then
-     !    call transpose_x_to_y(ux1,ux2)
-     !    call transpose_x_to_y(uy1,uy2)
-     !    call transpose_x_to_y(uz1,uz2)
-     !    call transpose_y_to_z(ux2,ux3)
-     !    call transpose_y_to_z(uy2,uy3)
-     !    call transpose_y_to_z(uz2,uz3)
-     !    sync_vel_needed = .false.
-     !  endif
-  
-     !  !x-derivatives
-     !  call derx (ta1,ux1,di1,sx,ffx,fsx,fwx,xsize(1),xsize(2),xsize(3),0,ubcx)
-     !  call derx (tb1,uy1,di1,sx,ffxp,fsxp,fwxp,xsize(1),xsize(2),xsize(3),1,ubcy)
-     !  call derx (tc1,uz1,di1,sx,ffxp,fsxp,fwxp,xsize(1),xsize(2),xsize(3),1,ubcz)
-     !  !y-derivatives
-     !  call dery (ta2,ux2,di2,sy,ffyp,fsyp,fwyp,ppy,ysize(1),ysize(2),ysize(3),1,ubcx)
-     !  call dery (tb2,uy2,di2,sy,ffy,fsy,fwy,ppy,ysize(1),ysize(2),ysize(3),0,ubcy)
-     !  call dery (tc2,uz2,di2,sy,ffyp,fsyp,fwyp,ppy,ysize(1),ysize(2),ysize(3),1,ubcz)
-     !  !!z-derivatives
-     !  call derz (ta3,ux3,di3,sz,ffzp,fszp,fwzp,zsize(1),zsize(2),zsize(3),1,ubcx)
-     !  call derz (tb3,uy3,di3,sz,ffzp,fszp,fwzp,zsize(1),zsize(2),zsize(3),1,ubcy)
-     !  call derz (tc3,uz3,di3,sz,ffz,fsz,fwz,zsize(1),zsize(2),zsize(3),0,ubcz)
-     !  !!all back to x-pencils
-     !  call transpose_z_to_y(ta3,td2)
-     !  call transpose_z_to_y(tb3,te2)
-     !  call transpose_z_to_y(tc3,tf2)
-     !  call transpose_y_to_x(td2,tg1)
-     !  call transpose_y_to_x(te2,th1)
-     !  call transpose_y_to_x(tf2,ti1)
-     !  call transpose_y_to_x(ta2,td1)
-     !  call transpose_y_to_x(tb2,te1)
-     !  call transpose_y_to_x(tc2,tf1)
-     !  !du/dx=ta1 du/dy=td1 and du/dz=tg1
-     !  !dv/dx=tb1 dv/dy=te1 and dv/dz=th1
-     !  !dw/dx=tc1 dw/dy=tf1 and dw/dz=ti1
-     !  !VORTICITY FIELD
-     !  di1 = zero
-     !  di1(:,:,:)=sqrt(  (tf1(:,:,:)-th1(:,:,:))**2 &
-     !                  + (tg1(:,:,:)-tc1(:,:,:))**2 &
-     !                  + (tb1(:,:,:)-td1(:,:,:))**2)
-     !  !call write_field(di1, ".", "vort", num, flush = .true.) ! Reusing temporary array, force flush
-  
-     !  !Q=-0.5*(ta1**2+te1**2+ti1**2)-td1*tb1-tg1*tc1-th1*tf1
-     !  di1 = zero
-     !  di1(:,:,: ) = - half*(ta1(:,:,:)**2+te1(:,:,:)**2+ti1(:,:,:)**2) &
-     !                - td1(:,:,:)*tb1(:,:,:) &
-     !                - tg1(:,:,:)*tc1(:,:,:) &
-     !                - th1(:,:,:)*tf1(:,:,:)
-     !  call write_field(di1, ".", "critq", num, flush = .true.) ! Reusing temporary array, force flush
-  
-      if ( iscalar==1 ) then
-        call set_fluid_properties_user(phi1,viscosity)
-        call write_field(viscosity,".","mu",num)
-     end if
-    end subroutine visu_user
+     integer, intent(in) :: num
+ 
+     ! Write vorticity as an example of post processing
+ 
+     ! Perform communications if needed
+     if (sync_vel_needed) then
+       call transpose_x_to_y(ux1,ux2)
+       call transpose_x_to_y(uy1,uy2)
+       call transpose_x_to_y(uz1,uz2)
+       call transpose_y_to_z(ux2,ux3)
+       call transpose_y_to_z(uy2,uy3)
+       call transpose_y_to_z(uz2,uz3)
+       sync_vel_needed = .false.
+     endif
+ 
+     !x-derivatives
+     call derx (ta1,ux1,di1,sx,ffx,fsx,fwx,xsize(1),xsize(2),xsize(3),0,ubcx)
+     call derx (tb1,uy1,di1,sx,ffxp,fsxp,fwxp,xsize(1),xsize(2),xsize(3),1,ubcy)
+     call derx (tc1,uz1,di1,sx,ffxp,fsxp,fwxp,xsize(1),xsize(2),xsize(3),1,ubcz)
+     !y-derivatives
+     call dery (ta2,ux2,di2,sy,ffyp,fsyp,fwyp,ppy,ysize(1),ysize(2),ysize(3),1,ubcx)
+     call dery (tb2,uy2,di2,sy,ffy,fsy,fwy,ppy,ysize(1),ysize(2),ysize(3),0,ubcy)
+     call dery (tc2,uz2,di2,sy,ffyp,fsyp,fwyp,ppy,ysize(1),ysize(2),ysize(3),1,ubcz)
+     !!z-derivatives
+     call derz (ta3,ux3,di3,sz,ffzp,fszp,fwzp,zsize(1),zsize(2),zsize(3),1,ubcx)
+     call derz (tb3,uy3,di3,sz,ffzp,fszp,fwzp,zsize(1),zsize(2),zsize(3),1,ubcy)
+     call derz (tc3,uz3,di3,sz,ffz,fsz,fwz,zsize(1),zsize(2),zsize(3),0,ubcz)
+     !!all back to x-pencils
+     call transpose_z_to_y(ta3,td2)
+     call transpose_z_to_y(tb3,te2)
+     call transpose_z_to_y(tc3,tf2)
+     call transpose_y_to_x(td2,tg1)
+     call transpose_y_to_x(te2,th1)
+     call transpose_y_to_x(tf2,ti1)
+     call transpose_y_to_x(ta2,td1)
+     call transpose_y_to_x(tb2,te1)
+     call transpose_y_to_x(tc2,tf1)
+     !du/dx=ta1 du/dy=td1 and du/dz=tg1
+     !dv/dx=tb1 dv/dy=te1 and dv/dz=th1
+     !dw/dx=tc1 dw/dy=tf1 and dw/dz=ti1
+     !VORTICITY FIELD
+     di1 = zero
+     di1(:,:,:)=sqrt(  (tf1(:,:,:)-th1(:,:,:))**2 &
+                     + (tg1(:,:,:)-tc1(:,:,:))**2 &
+                     + (tb1(:,:,:)-td1(:,:,:))**2)
+   !   call write_field(di1, ".", "vort", num, flush = .true.) ! Reusing temporary array, force flush
+ 
+     !Q=-0.5*(ta1**2+te1**2+ti1**2)-td1*tb1-tg1*tc1-th1*tf1
+     di1 = zero
+     di1(:,:,: ) = - half*(ta1(:,:,:)**2+te1(:,:,:)**2+ti1(:,:,:)**2) &
+                   - td1(:,:,:)*tb1(:,:,:) &
+                   - tg1(:,:,:)*tc1(:,:,:) &
+                   - th1(:,:,:)*tf1(:,:,:)
+   !   call write_field(di1, ".", "critq", num, flush = .true.) ! Reusing temporary array, force flush
+    if ( iscalar==1 ) then
+       call set_fluid_properties_jet(phi1,viscosity)
+       call write_field(viscosity,".","mu",num)
+    end if
 
-    subroutine set_fluid_properties_user(phi1,mu1)
+   end subroutine visu_jet
+ 
+   subroutine set_fluid_properties_jet(phi1,mu1)
 
       USE dbg_schemes, only: sin_prec, tanh_prec, sqrt_prec, exp_prec, log_prec
       implicit none
@@ -481,7 +489,7 @@ module user_sim
          end do
       end do
   
-    end subroutine set_fluid_properties_user
+    end subroutine set_fluid_properties_jet
 
     subroutine interpolated_profile(r,interp_vel)
 
@@ -1306,6 +1314,6 @@ module user_sim
       end if
       
     end subroutine interpolated_profile
- 
- end module user_sim
+
+ end module jet
  
