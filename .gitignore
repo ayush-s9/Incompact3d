@@ -35,5 +35,9 @@ Test*
 checkpoint
 restart*
 forces.dat*
-examples/
-tests/
+# <<<<<<< var_visc_inc
+# examples/
+# tests/
+# =======
+# data/
+# >>>>>>> master

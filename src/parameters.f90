@@ -51,7 +51,7 @@ subroutine parameter(input_i3d)
        nu0nu, cnu, ipinter
   NAMELIST /InOutParam/ irestart, icheckpoint, ioutput, nvisu, ilist, iprocessing, &
        ninflows, ntimesteps, inflowpath, ioutflow, output2D, nprobes
-  NAMELIST /Statistics/ wrotation,spinup_time, nstat, initstat
+  NAMELIST /Statistics/ wrotation,spinup_time, nstat, initstat, istatfreq
   NAMELIST /ProbesParam/ flag_all_digits, flag_extra_probes, xyzprobes
   NAMELIST /ScalarParam/ sc, ri, uset, cp, &
        nclxS1, nclxSn, nclyS1, nclySn, nclzS1, nclzSn, &
@@ -406,7 +406,7 @@ subroutine parameter(input_i3d)
        endif
      endif
      !
-     if (ilesmod.ne.0) then
+     if (ilesmod == 0) then ! Non-zero enables LES
        write(*,*) '                   : DNS'
      else
        if (jles==1) then
@@ -668,6 +668,7 @@ subroutine parameter_defaults()
   ipost = 0
   iprocessing = huge(i)
   initstat = huge(i)
+  istatfreq =1
   ninflows=1
   ntimesteps=1
   inflowpath='./'
