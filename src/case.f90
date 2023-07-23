@@ -153,7 +153,7 @@ contains
     
     if (itype == itype_user) then
 
-       call boundary_conditions_user (ux,uy,uz,phi)
+       call boundary_conditions_user (ux,uy,uz,phi,ep)
 
     elseif (itype.eq.itype_lockexch) then
 
